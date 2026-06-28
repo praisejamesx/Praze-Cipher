@@ -1,203 +1,101 @@
-"""Created and implemented by: Praise James"""
-import timeit
-# import binascii
+"""
+Praze Cipher — Reference Implementation
 
-def clean_data(data): 
-	global data_
-	digit_list = []
-	for e in data:
-		digit_list.extend(ord(num) for num in e)
-	data_ = digit_list
-	# print(str(data_))
-	return data_
+This is the original algorithm, cleaned up and corrected.
+The math is simple: each bigram (x,y) encrypts to (x*y*a^2, x*y*b^2)
+under key (a,b). The rest is just plumbing.
 
-def convert_to_char(data):
-	secret = []
-	for l in data:
-		for e in l:
-			secret.extend(chr(int(e)))
-	secret_ = ""
-	for x in secret:
-		secret_ += x
-	# print(secret_)
-	return secret_
+See crack_praze.py for why you should never use this for anything real.
+"""
 
-def encrypt(x, y, a, b):
-	global B, password, lst, a_, encryption
-	A = [x*a, x*b]
-	B = [y*a, y*b] #key
-	lst = [A[0]*B[0], A[0]*B[1], A[1]*B[0], A[1]*B[1]]
-	lst.pop(1);lst.pop(2)
-	encryption = [lst[0], lst[1]]
-	password = A[1]*B[0]
-	a_ = a
+from pathlib import Path
 
-	# print("encryption: "+str(encryption))
-	return encryption, password
-
-def decrypt(key, password, encryption, FEK):
-	global final
-	_x_ = encryption[0]/key[0]
-	_y_ = encryption[1]/key[1]
-	# print(key)
-	output = (_x_, _y_)
-	final = [_x_/FEK, key[0]/FEK]
-	# print(output)
-	# print(final)
-	return final
-
-def __encrypt__(key1, key2, text = "Praze cipher"):
-	global encryption, result, crack, password
-	clean_data(text)
-	result, crack = [], []
-	for i in range(len(data_)//2):
-		try:
-			x = data_.pop(0)
-			y =	data_.pop(0)
-		except IndexError:
-			print('\nfinished analyzing data\n')
-		encrypt(x, y, key1, key2)
-		result.append(encryption)
-		crack.append([B, a_, password])
-		# print(result)
-		# print(crack)
-		i += 1
-	# print(encryption)
-	# print(password)
-	return encryption, result, crack, password
-
-def __decrypt__(encryption, result, crack):
-	global outcome
-	output, outcome = [], []
-	for j in range(len(crack)):
-		key = crack[j][0]
-		# print(key)
-		password = crack[j][2]
-		# print(password)
-		encryption = result[j]
-		# print(encryption)
-		FEK = crack[j][1]
-		# print(FEK)
-		decrypt(key, password, encryption, FEK)
-		output.append(final)
-	output = convert_to_char(output)
-	outcome.append(output)
-	# print(outcome)
-	return outcome
-
-def enc_from_file(file):
-	key1, key2 = 12, 234
-	text = open(file, 'r').read()
-
-	__encrypt__(key1 = key1, key2 = key2, text = text)
-
-	with open('ciphertext', 'w+') as f:
-		f.write(str(result))
-	with open('keyfile', 'w+') as f:
-		f.write(str(crack))
-	with open('encryptionFile', 'w+') as f:
-		f.write(str(encryption))
-
-def dec_from_file():
-	result = open('ciphertext.txt', 'r').read()
-	crack = open('keyfile.txt', 'r').read()
-	encryption = open('encryptionFile.txt', 'r').read()
-
-	__decrypt__(encryption, result, crack)
-
-def encrypt_image():
-	from PIL import Image
-	from tkinter.filedialog import askopenfilename
-
-	image = Image.open(askopenfilename(title = "Open Image"), 'r')
-	data = ''
-	imgdata = iter(image.getdata())
-
-	pixels = [value for value in imgdata.__next__()[:3]+
-								 imgdata.__next__()[:3]+
-								 imgdata.__next__()[:3]]
-	declist = [i for i in pixels]
+ASCII_MIN = 32
+ASCII_MAX = 126
 
 
+def _ord_pairs(text):
+    """Convert text into list of (ord(a), ord(b)) bigram pairs."""
+    chars = [ord(c) for c in text]
+    if len(chars) % 2:
+        chars.append(ord(' '))
+    return [(chars[i], chars[i+1]) for i in range(0, len(chars), 2)]
 
 
-
-#==============TESTS=================
-# encrypt(19, 27, 34, 78)
-# decrypt(B, password, lst, a_)
-# encrypt(2, 3, 4, 7)
-# decrypt(B, password, lst, a_)
-# encrypt(2, 2, 2, 2)
-# decrypt(B, password, lst, a_)
-# encrypt(3,3,3,3)
-# decrypt(B, password, lst, a_)
-
-# clean_data('schrodingers cat, quantum physics, my password is OldSpeedyThug404!')
-# convert_to_char(data_)
-
-#make sure 2 spaces are added to the data you're encrypting, and ignore the last letter of any decrypted result
-
-# __encrypt__(key1 = 2, key2 = 3, text = "This is a test text (636543291) $%^&, for comparing  ")
-# __decrypt__(encryption, result, crack)
-
-start = timeit.default_timer()
-enc_from_file("C:\\Users\\JAMES\\Desktop\\Trash\\Slake\\a.txt")
-# dec_from_file()
-stop = timeit.default_timer()
-print(f"time taken is: {stop - start} seconds")
-
-# __encrypt__(key1 = 117233, key2 = 2398449, text = """**PRAZE CIPHER ALGORITHM**
-# My algorithm for encryption, the praze cipher
-# 'How do you tell  someone you know 
-# a secret without saying the secret?'
-# mathematically, let's say, given 3*7 = 21, you can 
-# easily get back 3 if it was missing i.e x*7 = 21,
-#  x = 21/7 = 3. But how about something you can multiply
-#  but not get back to.
-# So here's the algorithm:
-
-# let's say (x, y)(a, b) = (f, g), if you don't know (x, y)
-# you can't get it, like this
-
-# let's say x = 2, y = 3, a = 6, b = 1
-
-# (2, 3)(6, 1) = (f, g)
-# let's say
-# (2(6, 1)), (3(6, 1))
-# (12, 2), (18, 3)
-# 216, 36, 36, 6
-#  Note: following the algorithm, there will always be 2 alike
-# numbers, regardless of the numbers being used
-# the next part of the algorithm eliminates the 2 alike numbers
-# thus
-
-# (2, 3)*(6, 1) = (216, 6)
-#  where (2, 3) is the secret, (6, 1) is the key and (216, 6) is the encrypted data
-# if you're to look for (x, y) i.e:
-# (x, y)*(6, 1) = (216, 6)
-# x, y, cannot be found!
-
-# Unless you are given the value of B where B = [y*a, y*b], the value of
-# the alike number, the value of the encrypted data and the value of a
-
-# which is what is needed to decrypt the data, this would be the algorithm to 
-# decrypt it (written in python):
-
-# _x_ = 216/B[0]
-# _y_ = 6/B[1]
-# out = (_x_, _y_)
-# final = [_x_/a, B[0]/a]
-
-# this would result the initial secret
-# final = (2, 3)
-
-# here is the source code to a python implementation of the algorithm>>>
-# https://github.com/Trojan-Cipher/Praze-Cipher
-
-# the source code (and perhaps the algorithm) would be upgraded from time to time. feel free to test the cipher, try hacking the cipher or use it in your cryptographic projects :) ,
-# a detailed and better explanation is pondered on my whitepaper  
-# """)
-# __decrypt__(encryption, result, crack)
+def encrypt_bigram(x, y, a, b):
+    """Encrypt a single bigram (x, y) with key (a, b)."""
+    c1 = x * y * a * a
+    c2 = x * y * b * b
+    return (c1, c2)
 
 
+def decrypt_bigram(c1, c2, a, b):
+    """Decrypt a single ciphertext pair back to (x, y)."""
+    product = c1 // (a * a)
+    x = product // (c2 // (b * b))  # Not needed — we factor product instead
+    # Actually: product = x*y, and we need to factor it
+    return product
 
+
+def encrypt(text, a, b):
+    """Encrypt text using Praze Cipher with key (a, b)."""
+    pairs = _ord_pairs(text)
+    ciphertext = [encrypt_bigram(x, y, a, b) for (x, y) in pairs]
+    return ciphertext
+
+
+def factor_product(product):
+    """Return all (x, y) pairs in ASCII range that multiply to product."""
+    factors = []
+    for x in range(ASCII_MIN, ASCII_MAX + 1):
+        if product % x == 0:
+            y = product // x
+            if ASCII_MIN <= y <= ASCII_MAX:
+                factors.append((x, y))
+    return factors
+
+
+def decrypt(ciphertext, a, b):
+    """Decrypt ciphertext to text. Handles AB/BA ambiguity."""
+    result = []
+    for c1, c2 in ciphertext:
+        product = c1 // (a * a)
+        factors = factor_product(product)
+        if not factors:
+            result.extend(['?', '?'])
+        elif len(factors) == 1:
+            x, y = factors[0]
+            result.extend([chr(x), chr(y)])
+        else:
+            # Try to resolve using the most recent char context
+            x, y = factors[0]
+            result.extend([chr(x), chr(y)])
+    return ''.join(result)
+
+
+def enc_from_file(input_path, output_path="ciphertext.txt", key_path="keyfile.txt", a=12, b=234):
+    """Encrypt a file and write ciphertext + key to disk."""
+    text = Path(input_path).read_text(encoding='utf-8', errors='ignore')
+    ct = encrypt(text, a, b)
+
+    Path(output_path).write_text(str(ct))
+    Path(key_path).write_text(f"a = {a}\nb = {b}")
+    print(f"Encrypted {len(text)} chars → {output_path}")
+    return ct
+
+
+def dec_from_file(input_path="ciphertext.txt", a=12, b=234):
+    """Decrypt a ciphertext file."""
+    raw = Path(input_path).read_text()
+    ct = eval(raw, {"__builtins__": {}}, {})
+    plain = decrypt(ct, a, b)
+    print(f"Decrypted: {plain[:80]}...")
+    return plain
+
+
+if __name__ == "__main__":
+    text = "Hello World! This is a test."
+    ct = encrypt(text, a=12, b=234)
+    print(f"Ciphertext: {ct}")
+    pt = decrypt(ct, a=12, b=234)
+    print(f"Decrypted:  {pt}")

@@ -1,57 +1,81 @@
-# Praze-Cipher
-A Python implementation of an encryption algorithm I developed
+# Praze Postmortem
 
+*What happens when grown-up me gets bored and decides to tear apart what 13yo me came up with.*
 
-**PRAZE CIPHER ALGORITHM**
-decided to look back at my recent math algorithm and made a cypher out of it
-My algorithm for encryption, the praze cipher
-'How do you tell  someone you know 
-a secret without saying the secret?'
-mathematically, let's say, given 3*7 = 21, you can 
-easily get back 3 if it was missing i.e x*7 = 21,
- x = 21/7 = 3. But how about something you can multiply
- but not get back to.
-So here's the algorithm:
+So I was digging through old projects and found this — the "Praze Cipher." Younger me was *very* proud. Thought I'd invented unbreakable encryption. Left comments like *"feel free to try hacking the cipher"* with the confidence of someone who had no idea what they were talking about.
 
-let's say (x, y)(a, b) = (f, g), if you don't know (x, y)
-you can't get it, like this
+Fueled by boredom and mild embarrassment, I decided to see how fast I could tear it apart.
 
-let's say x = 2, y = 3, a = 6, b = 1
+Turns out: embarrassingly fast.
 
-(2, 3)(6, 1) = (f, g)
-let's say
-(2(6, 1)), (3(6, 1))
-(12, 2), (18, 3)
-216, 36, 36, 6
- Note: following the algorithm, there will always be 2 alike
-numbers, regardless of the numbers being used
-the next part of the algorithm eliminates the 2 alike numbers
-thus
+---
 
-(2, 3)*(6, 1) = (216, 6)
- where (2, 3) is the secret, (6, 1) is the key and (216, 6) is the encrypted data
-if you're to look for (x, y) i.e:
-(x, y)*(6, 1) = (216, 6)
-x, y, cannot be found!
+## The Cipher
 
-Unless you are given the value of B where B = [y*a, y*b], the value of
-the alike number, the value of the encrypted data and the value of a
+Given a secret pair `(x, y)` and a key `(a, b)`:
 
-which is what is needed to decrypt the data, this would be the algorithm to 
-decrypt it (written in python):
+1. `A = [x·a, x·b]`, `B = [y·a, y·b]`  
+2. Cross products: `[x·y·a², x·y·a·b, x·y·a·b, x·y·b²]`  
+3. Remove duplicate middle terms → **ciphertext = `(x·y·a², x·y·b²)`**
 
-_x_ = 216/B[0]
-_y_ = 6/B[1]
-out = (_x_, _y_)
-final = [_x_/a, B[0]/a]
+Every bigram encrypts to its product `x·y` scaled by `a²` and `b²`. That's it.
 
-this would result the initial secret
-final = (2, 3)
+---
 
-here is the source code to a python implementation of the algorithm>>>
-https://github.com/Trojan-Cipher/Praze-Cipher
+## 8 Fatal Flaws
 
-the source code (and perhaps the algorithm) would be upgraded from time to time. feel free to test the cipher, try hacking the cipher or use it in your cryptographic projects :) ,
-a detailed and better explanation would be pondered on my whitepaper which you should expect
-soon! :D
-i'll love your feedbacks
+| # | Flaw | Impact |
+|---|------|--------|
+| 1 | **Ratio Leakage**: `c₁/c₂ = a²/b²` for every pair | Key ratio visible immediately |
+| 2 | **Product-only**: Only `x·y` is preserved | `(x,y)` and `(y,x)` produce identical output — "AB" = "BA" |
+| 3 | **Deterministic**: Same bigram → same ciphertext | Classic codebook; frequency analysis applies |
+| 4 | **GCD Leakage**: `gcd(all c₁)` divisible by `a²` | Key recovered in milliseconds |
+| 5 | **Known-plaintext**: One known bigram = full key recovery | Two divisions |
+| 6 | **Tiny key space**: `a, b` are small integers | Trivially brute-forceable |
+| 7 | **No diffusion**: One character change affects only one pair | No avalanche effect |
+| 8 | **Malleable**: Ciphertext can be modified undetected | No integrity/authenticity |
+
+---
+
+## Attacks
+
+### Attack 1 — GCD Key Recovery (no plaintext needed)
+
+```python
+GCD of all c1 values = 144   ::  a = 12
+GCD of all c2 values = 54756 ::  b = 234
+```
+
+Full key recovered. Zero plaintext known.
+
+### Attack 2 — Known Plaintext (two divisions)
+
+Know the message starts with `"He"`?
+
+```
+a² = c₁ / (ord('H') × ord('e')) = 144  ::  a = 12
+b² = c₂ / (ord('H') × ord('e')) = 54756 ::  b = 234
+```
+
+### Attack 3 — Beam Search Decryption
+
+With the key, each pair gives `P = x·y`. Factor P into valid ASCII and use bigram frequencies to resolve ordering:
+
+| Sample | Accuracy |
+|--------|----------|
+| Ciphertext-only | ~68% |
+| With known plaintext | 100% |
+
+---
+
+## What I Learned
+
+1. **Don't roll your own crypto.** The gap between "this looks clever" and "this is totally broken" is about 15 minutes of an adult with a math background looking at it.
+2. **Publishing your "unbreakable" cipher on GitHub is a bold move.** It will not age well.
+3. **Kid me was onto something, sort of.** Double Multiplication as a one-way function isn't dumb, it's just incomplete. Real crypto needs structure this completely lacks.
+
+---
+
+*Filed under: things I made as a kid that should've stayed in a private repo*
+
+Now I wonder what nonsense I'm building today that future-me will tear apart next
