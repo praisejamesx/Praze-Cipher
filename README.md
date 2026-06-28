@@ -66,16 +66,7 @@ With the key, each pair gives `P = x·y`. Factor P into valid ASCII and use bigr
 | Ciphertext-only | ~68% |
 | With known plaintext | 100% |
 
----
-
-## What I Learned
-
-1. **Don't roll your own crypto.** The gap between "this looks clever" and "this is totally broken" is about 15 minutes of an adult with a math background looking at it.
-2. **Publishing your "unbreakable" cipher on GitHub is a bold move.** It will not age well.
-3. **Kid me was onto something, sort of.** Double Multiplication as a one-way function isn't dumb, it's just incomplete. Real crypto needs structure this completely lacks.
 
 ---
-
-*Filed under: things I made as a kid that should've stayed in a private repo*
 
 Now I wonder what nonsense I'm building today that future-me will tear apart next
